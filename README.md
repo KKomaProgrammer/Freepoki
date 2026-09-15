@@ -1,34 +1,35 @@
-# Freepoki
+# Game Assist Pages — 초저트래픽 정적판
 
-Cloudflare Pages Functions 기반 **Poki 전용** reverse proxy입니다.
+이 저장소는 Cloudflare Pages에 **정적 UI만** 배포하는 초저트래픽 구성입니다.
 
-## 기본 동작
+- `functions/` 없음
+- reverse proxy 없음
+- Poki / 이미지 / WASM / 영상 / 게임 파일의 서버측 fetch 없음
+- `portal-v1.html` 한 파일에 UI/CSS/JS 모두 포함
+- `portal-v1.html`은 1년 immutable 브라우저 캐시
+- 확장 프로그램에서는 이 페이지를 박스 안에 그대로 로드
+- 게임 목록/게임 URL 해석/실제 플레이 트래픽은 사용자 브라우저 → Poki로 직접 연결
 
-- `poki.com`의 페이지를 Cloudflare Pages Functions에서 서버 측 `fetch()`하여 응답합니다.
-- `poki.com` 및 모든 `*.poki.com` 서브도메인을 백엔드 경로로 처리합니다.
-- `poki-cdn.com`, `*.poki-cdn.com`, `poki-gdn.com`, `*.poki-gdn.com`도 기본 지원합니다.
-- `game-cdn.poki.com`, `games.poki.com`, `poki-auth.poki.com`, `t.poki.com`은 코드에 명시적으로 포함되어 있습니다.
-- HTML/CSS/JS/JSON/SVG의 URL과 HTTPS 리다이렉트를 프록시 경로로 다시 매핑합니다.
-- 이미지, WASM, 폰트, 오디오, 영상 등 바이너리 응답은 서버에서 스트리밍합니다.
-- Poki 메인 HTML에는 `© Poki · poki.com` 표시를 유지합니다.
-
-## 런타임
-
-`functions/__poki_runtime.js`는 동적으로 생성되는 `fetch`, XHR, `src`, `href`, `action` 등의 요청 중 **Poki 계열 도메인만** 백엔드 경로로 변경합니다.
-
-업로드 원본의 임의 외부 게임사 도메인을 런타임에서 자동 중계하는 부분은 공개 오픈프록시 위험을 줄이기 위해 포함하지 않았습니다. 서버 응답 안에서 이미 안전하게 서명된 외부 자산 URL은 `functions/[[path]].js`의 기존 서명 검증 구조를 따릅니다.
-
-## Cloudflare Pages
+## Cloudflare Pages 배포
 
 - Framework preset: `None`
 - Build command: 비움
 - Build output directory: `.`
-- 외부 서명 자산을 사용하는 경우 Secret: `PROXY_SIGNING_SECRET` (긴 랜덤 문자열 권장)
+- Functions/Workers 연결 불필요
+- 별도 API/Secret 불필요
 
-## 파일
+기존 프록시 배포에서 사용하던 `functions/` 폴더와 서버측 프록시 코드는 완전히 제거해야 합니다.
 
-- `functions/[[path]].js` — Poki 및 서버측 자산 프록시
-- `functions/_middleware.js` — HTML/CSS 보정 및 런타임 주입
-- `functions/__poki_runtime.js` — Poki 계열 동적 요청 처리
+## 직접 접속
 
-이 구성은 해당 콘텐츠에 필요한 사용·프록시 권한을 보유한 환경을 전제로 합니다.
+`/portal-v1.html`을 브라우저에서 직접 열 수 있습니다. 확장 프로그램 밖에서는 게임 선택 시 Poki 원본 페이지를 새 탭으로 직접 열며 Cloudflare가 게임 트래픽을 전달하지 않습니다.
+
+## 캐시
+
+`_headers`에서 `/portal-v1.html`에 다음 정책을 적용합니다.
+
+```text
+Cache-Control: public, max-age=31536000, immutable
+```
+
+UI를 수정할 때는 같은 파일을 덮어쓰기보다 `portal-v2.html`처럼 새 파일명으로 배포해 장기 캐시와 충돌하지 않게 하세요.
